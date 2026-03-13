@@ -3,6 +3,7 @@ import json
 import re
 from bs4 import BeautifulSoup
 
+
 def extract_course_data(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
     
