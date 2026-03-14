@@ -33,7 +33,7 @@ class QwenEmbedder(EmbeddingFunction):
 
 
 class Database:
-    def __init__(self, model="qwen3-embedding:8b", root_dir=".chroma", query_n=10):
+    def __init__(self, model="qwen3-embedding:0.6b", root_dir=".chroma", query_n=10):
         self.chroma_client = chromadb.PersistentClient(root_dir)
         self.collection = self.chroma_client.get_or_create_collection(
             name="course_collection",
@@ -56,8 +56,8 @@ class Database:
             return []
 
     def _get_metadata(self, row):
-        fields_of_study = None
-        periods = None
+        fields_of_study = "null"
+        periods = "null"
 
         if isinstance(row.main_field_of_study, str):
             fields_of_study = row.main_field_of_study.split(", ")
