@@ -60,8 +60,8 @@ class Database:
             "course_code": row.course_code,
             "course_name": row.course_name,
             "owner": row.owner,
-            "field_of_study": row.main_field_of_study,
-            "periods": ",".join(self._get_sps(row.course_rounds)),
+            "field_of_study": row.main_field_of_study.split(", "),
+            "periods": self._get_sps(row.course_rounds),
         }
         return metadata
 
@@ -82,8 +82,34 @@ class Database:
             metadatas=metadatas,
         )
 
-    def query(self, texts):
+    def _build_where(self, filters):
+        if filters is None:
+            return None
+
+        conditions = []
+
+        owners = filters.get("owners", None)
+        if owners is not None:
+            conditions.append({"owner": {"$in": owners}})
+            
+        periods = filters.get("periods", None)
+        if periods is not None:
+            if len(periods) == 1:
+                conditions.append({"periods": {"$contains": periods[0]}})
+            else:
+                periods_filter = [{"periods": {"$contains": p}} for p in periods]
+                conditions.append({"$or": periods_filter})
+ 
+        if len(conditions) == 0:
+            return None
+
+        if len(conditions) == 1:
+            return conditions[0]
+        return {"$and": conditions}
+
+    def query(self, texts, filters=None):
         return self.collection.query(
             query_texts=texts,
             n_results=self.query_n,
+            where=self._build_where(filters),
         )
