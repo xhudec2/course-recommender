@@ -56,12 +56,21 @@ class Database:
             return []
 
     def _get_metadata(self, row):
+        fields_of_study = None
+        periods = None
+
+        if isinstance(row.main_field_of_study, str):
+            fields_of_study = row.main_field_of_study.split(", ")
+
+        if row.course_rounds is not None:
+            periods = self._get_sps(row.course_rounds)
+
         metadata = {
             "course_code": row.course_code,
             "course_name": row.course_name,
             "owner": row.owner,
-            "field_of_study": row.main_field_of_study.split(", "),
-            "periods": self._get_sps(row.course_rounds),
+            "field_of_study": fields_of_study,
+            "periods": periods,
         }
         return metadata
 
@@ -91,7 +100,7 @@ class Database:
         owners = filters.get("owners", None)
         if owners is not None:
             conditions.append({"owner": {"$in": owners}})
-            
+
         periods = filters.get("periods", None)
         if periods is not None:
             if len(periods) == 1:
@@ -99,7 +108,7 @@ class Database:
             else:
                 periods_filter = [{"periods": {"$contains": p}} for p in periods]
                 conditions.append({"$or": periods_filter})
- 
+
         if len(conditions) == 0:
             return None
 
