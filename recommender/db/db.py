@@ -92,17 +92,13 @@ class Database:
         )
 
     def _build_where(self, filters):
-        if filters is None:
-            return None
-
         conditions = []
-
         owners = filters.get("owners", None)
-        if owners is not None:
+        if owners is not None and len(owners) > 0:
             conditions.append({"owner": {"$in": owners}})
 
         periods = filters.get("periods", None)
-        if periods is not None:
+        if periods is not None and len(periods) > 0:
             if len(periods) == 1:
                 conditions.append({"periods": {"$contains": periods[0]}})
             else:
