@@ -1,4 +1,4 @@
-from course_recommender.db import Database
+from recommender.db import Database
 
 
 def main():
