@@ -45,8 +45,9 @@ class Database:
     def _get_sps(self, course_rounds):
         try:
             sps = []
-            course_rounds = json.loads(course_rounds.replace("'", '"'))
+            course_rounds = course_rounds.replace("'", '"')
             course_rounds = course_rounds.replace("None", "null")
+            course_rounds = json.loads(course_rounds)
             for round in course_rounds:
                 sps.extend(round["Study Periods"])
             return [sp.lower() for sp in sps]
