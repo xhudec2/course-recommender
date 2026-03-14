@@ -1,0 +1,13 @@
+[project]
+name = "course-recommender"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "bs4>=0.0.2",
+    "chromadb>=1.5.5",
+    "ollama>=0.6.1",
+    "pandas>=3.0.1",
+    "torch>=2.10.0",
+]
