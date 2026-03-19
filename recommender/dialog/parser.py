@@ -36,7 +36,6 @@ def parse_question(user_question):
         stream=False,
     )
     jsons = response.message.content[8:-4]
-    print(jsons)
     try:
         return json.loads(jsons)
     except Exception as e:
