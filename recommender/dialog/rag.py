@@ -6,7 +6,7 @@ PROMPT_ENDING = """
 your task is to pick at most three courses that are connected to the user's prompt (this means you can pick 1, 2, or 3) and print them out in a 
 friendly and readable way. If there are no courses that satisfy this that's fine, you can then output that nothing was found. Do not try
 to be smart and make connections of what the courses could be teaching, only use the information from the summary.
-The user will not see the actual list of courses. Do not use any emojis. Output it as a list, not table.
+The user will not see the actual list of courses. Do not use any emojis. Output it as a list with short descriptions, not table.
 """
 
 
