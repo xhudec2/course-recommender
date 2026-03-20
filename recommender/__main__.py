@@ -8,6 +8,9 @@ from recommender.dialog import parse_question # Assuming this is the import path
 def main():
     terminal = blessed.Terminal()
     db = Database(query_n=10)
+    print("Hi, I'm a course recommendation assistant.")
+    print("Tell me what you're interested in learning, and I'll try to find some relevant courses for you!")
+    print("If you want to filter by study period or program, just include that in your query. Programs must use their abbreviation (e.g. MPDSC or MPSYS).")
     while True:
         question = input("> ")
         if question == "quit":
