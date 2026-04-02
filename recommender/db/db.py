@@ -21,7 +21,7 @@ class Embedder(EmbeddingFunction):
             model=self.model,
             input=input,
         )
-        return [np.array(embeds["embeddings"], dtype=np.float32)]
+        return np.array(embeds["embeddings"], dtype=np.float32)
 
     @staticmethod
     def name() -> str:
