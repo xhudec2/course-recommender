@@ -1,15 +1,18 @@
+import json
+from typing import Any, Dict, cast
+
 import chromadb
+import numpy as np
 import ollama
 import pandas as pd
-from typing import Dict, Any
-from chromadb import Documents, EmbeddingFunction, Embeddings
+from chromadb import Documents, EmbeddingFunction, Embeddings, IDs, Where
 from chromadb.utils.embedding_functions import register_embedding_function
-import numpy as np
-import json
+
+from recommender.typing import StrictQueryResult
 
 
 @register_embedding_function
-class QwenEmbedder(EmbeddingFunction):
+class Embedder(EmbeddingFunction):
     def __init__(self, model="qwen3-embedding:8b"):
         self.model = model
 
@@ -18,7 +21,7 @@ class QwenEmbedder(EmbeddingFunction):
             model=self.model,
             input=input,
         )
-        return np.array(embeds["embeddings"], dtype=np.float32)
+        return [np.array(embeds["embeddings"], dtype=np.float32)]
 
     @staticmethod
     def name() -> str:
@@ -29,7 +32,7 @@ class QwenEmbedder(EmbeddingFunction):
 
     @staticmethod
     def build_from_config(config: Dict[str, Any]) -> "EmbeddingFunction":
-        return QwenEmbedder(config["model"])
+        return Embedder(config["model"])
 
 
 class Database:
@@ -37,7 +40,7 @@ class Database:
         self.chroma_client = chromadb.PersistentClient(root_dir)
         self.collection = self.chroma_client.get_or_create_collection(
             name="course_collection",
-            embedding_function=QwenEmbedder(model),
+            embedding_function=Embedder(model),
             configuration={"hnsw": {"space": "cosine"}},
         )
         self.query_n = query_n
@@ -86,12 +89,15 @@ class Database:
             metadatas.append(self._get_metadata(course))
 
         self.collection.add(
-            ids=summaries.course_code.values.tolist(),
-            documents=summaries.summary.values.tolist(),
+            ids=cast(IDs, summaries.course_code.values.tolist()),
+            documents=cast(Documents, summaries.summary.values.tolist()),
             metadatas=metadatas,
         )
 
-    def _build_where(self, filters):
+    def _build_where(self, filters: None | dict[str, str]) -> None | Where:
+        if filters is None:
+            return None
+
         conditions = []
         owners = filters.get("owners", None)
         if owners is not None and len(owners) > 0:
@@ -112,9 +118,12 @@ class Database:
             return conditions[0]
         return {"$and": conditions}
 
-    def query(self, texts, filters=None):
-        return self.collection.query(
+    def query(
+        self, texts: list[str], filters: None | dict[str, str] = None
+    ) -> StrictQueryResult:
+        result = self.collection.query(
             query_texts=texts,
             n_results=self.query_n,
             where=self._build_where(filters),
         )
+        return cast(StrictQueryResult, result)
