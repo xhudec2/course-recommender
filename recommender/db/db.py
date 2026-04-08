@@ -13,7 +13,7 @@ from recommender.typing import StrictQueryResult
 
 @register_embedding_function
 class Embedder(EmbeddingFunction):
-    def __init__(self, model="qwen3-embedding:8b"):
+    def __init__(self, model="mxbai-embed-large:335m"):
         self.model = model
 
     def __call__(self, input: Documents) -> Embeddings:
@@ -25,7 +25,7 @@ class Embedder(EmbeddingFunction):
 
     @staticmethod
     def name() -> str:
-        return "Qwen3:8b Embedder"
+        return "Embedder"
 
     def get_config(self) -> Dict[str, Any]:
         return {"model": self.model}
@@ -36,7 +36,7 @@ class Embedder(EmbeddingFunction):
 
 
 class Database:
-    def __init__(self, model="qwen3-embedding:8b", root_dir=".chroma", query_n=10):
+    def __init__(self, model="mxbai-embed-large:335m", root_dir=".chroma", query_n=10):
         self.chroma_client = chromadb.PersistentClient(root_dir)
         self.collection = self.chroma_client.get_or_create_collection(
             name="course_collection",
@@ -53,17 +53,21 @@ class Database:
             course_rounds = json.loads(course_rounds)
             for round in course_rounds:
                 sps.extend(round["Study Periods"])
+            if len(sps) == 0:
+                return ["sp1", "sp2", "sp3", "sp4", "summer_course", "no_sp"]
             return [sp.lower() for sp in sps]
+
         except Exception as e:
             print(f"{course_rounds} failed with {e}")
-            return []
+            # default to all sps
+            return ["sp1", "sp2", "sp3", "sp4", "summer_course", "no_sp"]
 
     def _get_metadata(self, row):
         fields_of_study = "null"
         periods = "null"
 
-        if isinstance(row.main_field_of_study, str):
-            fields_of_study = row.main_field_of_study.split(", ")
+        if isinstance(row.field_of_study, str):
+            fields_of_study = row.field_of_study.split(", ")
 
         if row.course_rounds is not None:
             periods = self._get_sps(row.course_rounds)
@@ -71,7 +75,7 @@ class Database:
         metadata = {
             "course_code": row.course_code,
             "course_name": row.course_name,
-            "owner": row.owner,
+            "owner": row.course_owner,
             "field_of_study": fields_of_study,
             "periods": periods,
         }
@@ -79,10 +83,6 @@ class Database:
 
     def fill(self, file):
         summaries = pd.read_csv(file)
-        for column in summaries.columns:
-            summaries = summaries.rename(
-                columns={column: column.replace(" ", "_").lower()}
-            )
 
         metadatas = []
         for course in summaries.itertuples():
