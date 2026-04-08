@@ -238,7 +238,10 @@ def parse_course(filename: Path) -> None | CourseData:
         with open(filename, "r", encoding="utf-8") as file:
             html_content = file.read()
 
-        return extract_course_data(html_content)
+        course = extract_course_data(html_content)
+        if course is None:
+            print(f"  -> Failed to extract data from {filename}")
+        return course
     except Exception as e:
         print(f"  -> Error processing {filename}: {e}")
         return None
@@ -246,7 +249,7 @@ def parse_course(filename: Path) -> None | CourseData:
 
 def parse_courses(
     input_directory: Path = Path("data/courses"),
-    output_json_file: Path = Path("data/all_courses_data.json"),
+    output_csv: Path = Path("data/all_courses_data.csv"),
 ) -> None:
     filenames = list(input_directory.glob("*.html"))
 
@@ -258,11 +261,9 @@ def parse_courses(
     ]
 
     if len(all_courses_database) > 0:
-        pd.DataFrame(all_courses_database).to_csv(
-            "data/all_courses_data.csv", index=False
-        )
+        pd.DataFrame(all_courses_database).to_csv(output_csv, index=False)
         print("\n--- Success! ---")
         print(f"Extracted data from {len(all_courses_database)} courses.")
-        print(f"Saved to: {output_json_file}")
+        print(f"Saved to: {output_csv}")
     else:
         print("\nNo valid course data was extracted.")

@@ -18,6 +18,8 @@ GUIDELINES:
 - Do not include word count in the output
 - CRITICAL: Return ONLY valid JSON. DO NOT include markdown, code blocks, or extra text.
 - Do NOT use any control characters, or special characters in the JSON string.
+- Do NOT escape " characters in the summary text. The summary should be a plain string without any escaped characters.
+- Make sure the JSON is properly formatted, is valid, and can be parsed without errors.
 
 COURSE DETAILS:
 
@@ -29,7 +31,7 @@ CONTENT: {content}
 
 OUTPUT FORMAT:
 Return ONLY valid JSON with this exact structure: {{"summary": "your summary text here"}}
-Do not wrap in code blocks. Do not include any text before or after the JSON."""
+Do not wrap in code blocks. Do not include any text before or after the JSON and the curly brackets."""
 
 
 def make_summary(aim: str, learning_outcomes: str, content: str) -> None | str:
