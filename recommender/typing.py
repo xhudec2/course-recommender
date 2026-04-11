@@ -1,4 +1,4 @@
-from typing import TypeAlias, TypedDict
+from typing import Literal, TypedDict
 
 from chromadb import Embeddings, IDs, Include, Metadata
 
@@ -16,7 +16,16 @@ class StrictQueryResult(TypedDict):
     included: Include
 
 
-CourseRound: TypeAlias = dict[str, str | list[str]]
+class ProgramInfo(TypedDict):
+    program: str
+    year: None | int
+    level: None | str
+
+
+class CourseRound(TypedDict):
+    round_name: str
+    study_periods: list[str]
+    programs: None | list[ProgramInfo]
 
 
 class CourseData(TypedDict):
@@ -34,3 +43,16 @@ class CourseData(TypedDict):
     content: str
     summary: str
     course_rounds: list[CourseRound]
+
+
+class CourseFilters(TypedDict, total=False):
+    owners: list[str]
+    periods: list[str]
+
+
+class Course(TypedDict):
+    course_code: str
+    course_name: str
+    course_owner: Literal["null"] | str
+    field_of_study: Literal["null"] | str
+    course_rounds: Literal["null"] | str

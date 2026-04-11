@@ -1,5 +1,4 @@
 import json
-from typing import cast
 
 from ollama import chat
 
@@ -35,7 +34,9 @@ def parse_question(user_question: str) -> None | str:
         stream=False,
     )
     try:
-        return json.loads(cast(str, response.message.content))["question"]
+        content = str(response.message.content)
+        question = json.loads(content)["question"]
+        return str(question)
     except Exception as e:
         print(f"Failed to parse question {e}")
         return None

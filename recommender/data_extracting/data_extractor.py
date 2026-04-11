@@ -1,13 +1,12 @@
 import re
 from multiprocessing import Pool
 from pathlib import Path
-from typing import cast
 
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 
 from recommender.data_extracting.summarise import make_summary
-from recommender.typing import CourseData, CourseRound
+from recommender.typing import CourseData, CourseRound, ProgramInfo
 
 
 def get_course_name_code(soup: BeautifulSoup) -> None | tuple[str, str]:
@@ -30,7 +29,7 @@ def get_course_id(soup: BeautifulSoup) -> None | str:
 
     selected_option = select_tag.find("option", selected=True)
     if selected_option is not None:
-        return cast(str, selected_option["value"])
+        return str(selected_option["value"])
 
     return None
 
@@ -122,7 +121,7 @@ def get_study_periods(table_node: Tag) -> list[str]:
     return sorted(active_periods)
 
 
-def get_program_info(table_node: Tag):
+def get_program_info(table_node: Tag) -> None | list[ProgramInfo]:
     def _filter(tag: Tag) -> bool:
         return (tag.name == "h4") and (
             re.search("In programs", tag.get_text(), re.IGNORECASE) is not None
@@ -130,14 +129,14 @@ def get_program_info(table_node: Tag):
 
     programs_header = table_node.find_next(_filter)
     if programs_header is None:
-        return []
+        return None
 
-    programs = []
+    programs: list[ProgramInfo] = []
     for sibling in programs_header.next_siblings:
         if (
             not isinstance(sibling, Tag)
             or sibling.name != "a"
-            or "programplan" not in cast(str, sibling.get("href", ""))
+            or "programplan" not in str(sibling.get("href", ""))
         ):
             continue
 
@@ -149,7 +148,7 @@ def get_program_info(table_node: Tag):
 
         level_match = re.search(r"\(([^)]+)\)$", prog_name)
         if level_match is not None:
-            level = level_match.group(1).strip()
+            level = str(level_match.group(1).strip())
             prog_name = prog_name[: level_match.start()].strip()
 
         year_match = re.search(r",\s*Year\s+(\d+)$", prog_name, re.IGNORECASE)
@@ -157,19 +156,16 @@ def get_program_info(table_node: Tag):
             year = int(year_match.group(1))
             prog_name = prog_name[: year_match.start()].strip()
 
-        programs.append({"Program": prog_name, "Year": year, "Level": level})
+        programs.append({"program": prog_name, "year": year, "level": level})
     return programs
 
 
 def get_course_round(table_node: Tag, index: int) -> CourseRound:
-    round_data = {
-        "Round Name": f"Round {index + 1}",
-        "Study Periods": [],
-        "Programs": [],
+    round_data: CourseRound = {
+        "round_name": f"Round {index + 1}",
+        "study_periods": get_study_periods(table_node),
+        "programs": get_program_info(table_node),
     }
-
-    round_data["Study Periods"] = get_study_periods(table_node)
-    round_data["Programs"] = get_program_info(table_node)
     return round_data
 
 
