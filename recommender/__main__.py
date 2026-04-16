@@ -1,60 +1,66 @@
-from typing import Generator, cast
+from pathlib import Path
+from typing import Any, cast
 
-import streamlit as st
+import uvicorn
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
-from recommender.db import Database
+from recommender.app import (
+    AnswerResponse,
+    ChatRequest,
+    CourseResult,
+    build_course_url,
+    collect_stream_text,
+    load_db,
+)
 from recommender.dialog import get_answer
 
+app = FastAPI(title="Course Recommender API")
+FRONTEND_FILE = Path(__file__).with_name("static") / "index.html"
 
-@st.cache_resource
-def load_db() -> Database:
-    return Database(query_n=10)
+
+@app.get("/")
+def index() -> FileResponse:
+    return FileResponse(FRONTEND_FILE)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.post("/chat", response_model=AnswerResponse)
+def chat(payload: ChatRequest) -> AnswerResponse:
+    response = get_answer(load_db(), payload.question.strip())
+    if response is None:
+        raise HTTPException(status_code=400, detail="Could not parse question")
+
+    stream, query_res = response
+    answer = collect_stream_text(stream)
+
+    courses: list[CourseResult] = []
+    for i, metadata in enumerate(query_res["metadatas"][0], start=1):
+        course = cast(dict[str, Any], metadata)
+        course_code = str(course.get("course_code", ""))
+        course_name = str(course.get("course_name", ""))
+
+        if not course_code or not course_name:
+            continue
+
+        courses.append(
+            CourseResult(
+                rank=i,
+                course_code=course_code,
+                course_name=course_name,
+                url=build_course_url(course_code),
+            )
+        )
+
+    return AnswerResponse(answer=answer, courses=courses)
 
 
 def main() -> None:
-    st.title("Course Recommender")
-
-    db = load_db()
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
-
-    if prompt := st.chat_input("Ask about a course..."):
-        st.chat_message("user").markdown(prompt)
-        st.session_state.messages.append({"role": "user", "content": prompt})
-
-        with st.chat_message("assistant"):
-            response = get_answer(db, prompt)
-            if response is None:
-                return
-
-            stream, query_res = response
-
-            def stream_generator() -> Generator[str]:
-                for chunk in stream:
-                    if chunk.message.content:
-                        yield chunk.message.content
-
-            response_text = st.write_stream(stream_generator())
-
-            courses_markdown = "\n\n**Other relevant courses found in the database:**\n"
-            for i, course in enumerate(query_res["metadatas"][0]):
-                course_code = course["course_code"]
-                course_name = course["course_name"]
-                url = f"https://www.chalmers.se/en/education/your-studies/find-course-and-programme-syllabi/course-syllabus/{course_code}/?acYear=2025%2F2026"
-
-                courses_markdown += f"{i + 1}. [{course_code} - {course_name}]({url})\n"
-
-            st.markdown(courses_markdown)
-
-            full_assistant_message = cast(str, response_text) + courses_markdown
-            st.session_state.messages.append(
-                {"role": "assistant", "content": full_assistant_message}
-            )
+    uvicorn.run("recommender.__main__:app", host="0.0.0.0", port=8000, reload=True)
 
 
 if __name__ == "__main__":
