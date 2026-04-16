@@ -1,7 +1,6 @@
 from pathlib import Path
 from typing import Any, cast
 
-import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
@@ -57,11 +56,3 @@ def chat(payload: ChatRequest) -> AnswerResponse:
         )
 
     return AnswerResponse(answer=answer, courses=courses)
-
-
-def main() -> None:
-    uvicorn.run("recommender.__main__:app", host="0.0.0.0", port=8000, reload=True)
-
-
-if __name__ == "__main__":
-    main()
