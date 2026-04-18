@@ -1,8 +1,7 @@
-from pathlib import Path
 from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from recommender.app import (
     AnswerResponse,
@@ -13,14 +12,16 @@ from recommender.app import (
     load_db,
 )
 from recommender.dialog import get_answer
+from recommender.typing import CourseFilters
 
 app = FastAPI(title="Course Recommender API")
-FRONTEND_FILE = Path(__file__).with_name("static") / "index.html"
-
-
-@app.get("/")
-def index() -> FileResponse:
-    return FileResponse(FRONTEND_FILE)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],  # add your deployed frontend origin later
+    allow_credentials=True,
+    allow_methods=["*"],  # includes OPTIONS + POST
+    allow_headers=["*"],  # includes Content-Type
+)
 
 
 @app.get("/health")
@@ -30,7 +31,10 @@ def health() -> dict[str, str]:
 
 @app.post("/chat", response_model=AnswerResponse)
 def chat(payload: ChatRequest) -> AnswerResponse:
-    response = get_answer(load_db(), payload.question.strip())
+    filters = cast(
+        CourseFilters, payload.model_dump(exclude={"question"}, exclude_none=True)
+    )
+    response = get_answer(load_db(), payload.question.strip(), filters)
     if response is None:
         raise HTTPException(status_code=400, detail="Could not parse question")
 
