@@ -14,7 +14,7 @@ from recommender.app import (
 from recommender.dialog import get_answer
 from recommender.typing import CourseFilters
 
-app = FastAPI(title="Course Recommender API")
+app = FastAPI(title="Course Finder API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8080"],
@@ -32,10 +32,17 @@ def health() -> dict[str, str]:
 @app.post("/chat", response_model=AnswerResponse)
 def chat(payload: ChatRequest) -> AnswerResponse:
     filters = cast(
-        CourseFilters, payload.model_dump(exclude={"question"}, exclude_none=True)
+        CourseFilters,
+        payload.model_dump(
+            exclude={"question", "hallucination_level", "in_swedish"}, exclude_none=True
+        ),
     )
     response = get_answer(
-        load_db(), payload.question.strip(), payload.hallucination_level, filters
+        load_db(),
+        payload.question.strip(),
+        payload.hallucination_level,
+        payload.in_swedish,
+        filters,
     )
     if response is None:
         raise HTTPException(status_code=400, detail="Could not parse question")
