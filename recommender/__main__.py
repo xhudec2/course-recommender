@@ -17,10 +17,10 @@ from recommender.typing import CourseFilters
 app = FastAPI(title="Course Recommender API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # add your deployed frontend origin later
+    allow_origins=["http://localhost:8080"],
     allow_credentials=True,
-    allow_methods=["*"],  # includes OPTIONS + POST
-    allow_headers=["*"],  # includes Content-Type
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -34,7 +34,9 @@ def chat(payload: ChatRequest) -> AnswerResponse:
     filters = cast(
         CourseFilters, payload.model_dump(exclude={"question"}, exclude_none=True)
     )
-    response = get_answer(load_db(), payload.question.strip(), filters)
+    response = get_answer(
+        load_db(), payload.question.strip(), payload.hallucination_level, filters
+    )
     if response is None:
         raise HTTPException(status_code=400, detail="Could not parse question")
 

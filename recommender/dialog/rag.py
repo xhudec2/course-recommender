@@ -40,9 +40,12 @@ RETRIEVED COURSES:
 
 
 def get_answer(
-    db: Database, question: str, filters: None | CourseFilters = None
+    db: Database,
+    question: str,
+    hallucination_level: float,
+    filters: None | CourseFilters = None,
 ) -> None | tuple[Iterator[ChatResponse], StrictQueryResult]:
-    response = parse_question(question)
+    response = parse_question(question, hallucination_level)
     if response is None:
         return None
     texts = [response]
