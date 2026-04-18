@@ -1,7 +1,6 @@
 import re
 import time
 from pathlib import Path
-from typing import cast
 from urllib.parse import urljoin
 
 import requests
@@ -18,12 +17,12 @@ def get_course_links() -> str:
     soup = BeautifulSoup(response.text, "html.parser")
 
     course_links = soup.find_all("a", href=re.compile(r"^course\?course_id="))
-    unique_courses = {}
+    unique_courses: dict[str, str] = {}
 
     for link in course_links:
-        url = link.get("href")
-        text = link.text.strip()
-        if url not in unique_courses or len(text) > len(unique_courses[url]):
+        url = str(link.get("href"))
+        text = link.get_text(strip=True)
+        if url not in unique_courses.keys() or len(text) > len(unique_courses[url]):
             unique_courses[url] = text
 
     print(f"Found {len(unique_courses)} courses.")
@@ -46,7 +45,7 @@ def scrape(output_dir: Path = Path("data/courses")) -> None:
         course_name = tag.get_text(strip=True)
         if href is None:
             continue
-        href = cast(str, href)
+        href = str(href)
 
         id_match = re.search(r"course_id=([a-zA-Z0-9]+)", href)
         if id_match is None:

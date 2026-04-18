@@ -1,5 +1,4 @@
 import json
-from typing import cast
 
 from ollama import chat
 
@@ -36,9 +35,9 @@ Do not wrap in code blocks. Do not include any text before or after the JSON and
 
 def make_summary(aim: str, learning_outcomes: str, content: str) -> None | str:
     prompt = make_prompt(
-        cast(str, aim),
-        cast(str, learning_outcomes),
-        cast(str, content),
+        aim,
+        learning_outcomes,
+        content,
     )
     response = chat(
         model="gpt-oss:20b-cloud",
@@ -47,7 +46,8 @@ def make_summary(aim: str, learning_outcomes: str, content: str) -> None | str:
         stream=False,
     )
     try:
-        summary = json.loads(cast(str, response.message.content))["summary"]
+        content = str(response.message.content)
+        summary = str(json.loads(content)["summary"])
         return summary.replace("\n", "\\n")
     except Exception as e:
         print(f"Failed with {e}")

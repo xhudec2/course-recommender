@@ -1,51 +1,58 @@
-from time import sleep
+from pathlib import Path
+from typing import Any, cast
 
-import blessed
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 
-from recommender.db import Database
-from recommender.dialog import (
-    get_answer,
+from recommender.app import (
+    AnswerResponse,
+    ChatRequest,
+    CourseResult,
+    build_course_url,
+    collect_stream_text,
+    load_db,
 )
+from recommender.dialog import get_answer
+
+app = FastAPI(title="Course Recommender API")
+FRONTEND_FILE = Path(__file__).with_name("static") / "index.html"
 
 
-def main() -> None:
-    terminal = blessed.Terminal()
-    db = Database(query_n=10)
-    print("Hi, I'm a course recommendation assistant.")
-    print(
-        "Tell me what you're interested in learning, and I'll try to find some relevant courses for you!"
-    )
-    while True:
-        question = input("> ")
-        if question == "quit":
-            break
-        response = get_answer(db, question)
-        if response is None:
+@app.get("/")
+def index() -> FileResponse:
+    return FileResponse(FRONTEND_FILE)
+
+
+@app.get("/health")
+def health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
+@app.post("/chat", response_model=AnswerResponse)
+def chat(payload: ChatRequest) -> AnswerResponse:
+    response = get_answer(load_db(), payload.question.strip())
+    if response is None:
+        raise HTTPException(status_code=400, detail="Could not parse question")
+
+    stream, query_res = response
+    answer = collect_stream_text(stream)
+
+    courses: list[CourseResult] = []
+    for i, metadata in enumerate(query_res["metadatas"][0], start=1):
+        course = cast(dict[str, Any], metadata)
+        course_code = str(course.get("course_code", ""))
+        course_name = str(course.get("course_name", ""))
+
+        if not course_code or not course_name:
             continue
 
-        stream, query_res = response
-        content = ""
-        print("", flush=True)
-        for chunk in stream:
-            if chunk.message.content:
-                print(chunk.message.content, end="", flush=True)
-                content += chunk.message.content
-        print()
-        print()
-        print("Other relevant courses found in the database:")
-        for i, course in enumerate(query_res["metadatas"][0]):
-            course_code = course["course_code"]
-            course_name = course["course_name"]
-            print(
-                f"{i + 1:2d}. ",
-                terminal.link(
-                    f"https://www.chalmers.se/en/education/your-studies/find-course-and-programme-syllabi/course-syllabus/{course_code}/?acYear=2025%2F2026",
-                    f"{course_code} - {course_name}",
-                ),
+        courses.append(
+            CourseResult(
+                rank=i,
+                course_code=course_code,
+                course_name=course_name,
+                url=build_course_url(course_code),
             )
-            sleep(0.5)
-        print()
+        )
 
-
-if __name__ == "__main__":
-    main()
+    return AnswerResponse(answer=answer, courses=courses)

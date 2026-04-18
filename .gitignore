@@ -210,3 +210,7 @@ __marimo__/
 *.json
 *.html
 data/
+
+notebooks/
+
+.DS_Store
