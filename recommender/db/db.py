@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any, Dict, Literal, cast
+from typing import Any, Dict, cast
 
 import chromadb
 import numpy as np
