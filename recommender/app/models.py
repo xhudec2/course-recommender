@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1)
+    periods: None | list[str] = None
+    teaching_language: None | str = None
 
 
 class CourseResult(BaseModel):

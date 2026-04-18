@@ -48,6 +48,7 @@ class CourseData(TypedDict):
 class CourseFilters(TypedDict, total=False):
     owners: list[str]
     periods: list[str]
+    teaching_language: str
 
 
 class Course(TypedDict):
@@ -56,3 +57,4 @@ class Course(TypedDict):
     course_owner: Literal["null"] | str
     field_of_study: Literal["null"] | str
     course_rounds: Literal["null"] | str
+    teaching_language: Literal["null"] | str

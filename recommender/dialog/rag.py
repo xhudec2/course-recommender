@@ -4,7 +4,7 @@ from ollama import ChatResponse, chat
 
 from recommender.db import Database
 from recommender.dialog import parse_question
-from recommender.typing import StrictQueryResult
+from recommender.typing import CourseFilters, StrictQueryResult
 
 
 def augment_prompt(
@@ -40,13 +40,12 @@ RETRIEVED COURSES:
 
 
 def get_answer(
-    db: Database, question: str
+    db: Database, question: str, filters: None | CourseFilters = None
 ) -> None | tuple[Iterator[ChatResponse], StrictQueryResult]:
     response = parse_question(question)
     if response is None:
         return None
     texts = [response]
-    filters = None
     query_res = db.query(texts, filters)
 
     distances = query_res["distances"][0]
