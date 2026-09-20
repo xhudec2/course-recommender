@@ -82,4 +82,4 @@ def scrape(output_dir: Path = Path("data/courses")) -> None:
             print(f"Failed with {e}")
 
         # to not overwhelm the system
-        time.sleep(0.05)
+        time.sleep(0.5)
