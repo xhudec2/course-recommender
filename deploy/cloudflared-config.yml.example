@@ -1,0 +1,6 @@
+# Fill in the values from `cloudflared tunnel login` / `cloudflared tunnel create`,
+# then save as ~/.cloudflared/config.yml on the VM (as the same user that ran those commands).
+url: http://localhost:8000
+tunnel: <TUNNEL_UUID>
+credentials-file: /home/opc/.cloudflared/<TUNNEL_UUID>.json
+origincert: /home/opc/.cloudflared/cert.pem
