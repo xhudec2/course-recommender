@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 class ChatRequest(BaseModel):
     question: str = Field(min_length=1)
-    hallucination_level: float = Field(0.0, ge=0.0, le=1.0)
+    inference_level: float = Field(0.0, ge=0.0, le=1.0)
     periods: None | list[str] = None
     teaching_language: None | str = None
     in_swedish: bool = False

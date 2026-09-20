@@ -3,7 +3,7 @@ import json
 from ollama import chat
 
 
-def get_parser_prompt(user_question: str, hallucination_level: float) -> str:
+def get_parser_prompt(user_question: str, inference_level: float) -> str:
     return f"""You are a query reformulation assistant for a course recommendation system using ChromaDB similarity search.
 
 TASK: Transform a user's search query into a course description format (up to 500 words) that can be matched against existing course descriptions.
@@ -11,7 +11,7 @@ TASK: Transform a user's search query into a course description format (up to 50
 INSTRUCTIONS:
 1. Parse the user's query to extract their learning interests and goals
 2. Reformulate as a course description matching the tone and structure of actual courses
-3. Infer relevant learning outcomes and course content from their query (scaled by hallucination_level)
+3. Infer relevant learning outcomes and course content from their query (scaled by inference_level)
 4. Omit: study periods, instructor/owner information, administrative details
 
 GUIDELINES:
@@ -20,8 +20,8 @@ GUIDELINES:
 - Keep additions minimal and grounded in the user's query
 - Avoid speculative or tangential content
 
-HALLUCINATION LEVEL:
-hallucination_level = {hallucination_level}
+INFERENCE LEVEL:
+inference_level = {inference_level}
 
 Interpretation (MUST FOLLOW):
 - 0.0: Ultra-literal. Do not add topics/skills not explicitly stated by the user.
@@ -50,13 +50,13 @@ Return valid JSON exactly like:
 """
 
 
-def parse_question(user_question: str, hallucination_level: float) -> None | str:
+def parse_question(user_question: str, inference_level: float) -> None | str:
     response = chat(
         model="gpt-oss:20b-cloud",
         messages=[
             {
                 "role": "user",
-                "content": get_parser_prompt(user_question, hallucination_level),
+                "content": get_parser_prompt(user_question, inference_level),
             }
         ],
         format="json",

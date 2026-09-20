@@ -44,13 +44,13 @@ def chat(payload: ChatRequest) -> AnswerResponse:
     filters = cast(
         CourseFilters,
         payload.model_dump(
-            exclude={"question", "hallucination_level", "in_swedish"}, exclude_none=True
+            exclude={"question", "inference_level", "in_swedish"}, exclude_none=True
         ),
     )
     response = get_answer(
         load_db(),
         payload.question.strip(),
-        payload.hallucination_level,
+        payload.inference_level,
         payload.in_swedish,
         filters,
     )
