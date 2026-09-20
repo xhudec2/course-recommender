@@ -19,7 +19,7 @@ from recommender.typing import CourseFilters
 app = FastAPI(title="Course Finder API")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],
+    allow_origins=["https://course-finder.se", "https://www.course-finder.se"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -37,7 +37,9 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/chat", response_model=AnswerResponse, dependencies=[Depends(verify_api_key)])
+@app.post(
+    "/chat", response_model=AnswerResponse, dependencies=[Depends(verify_api_key)]
+)
 def chat(payload: ChatRequest) -> AnswerResponse:
     filters = cast(
         CourseFilters,
