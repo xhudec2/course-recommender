@@ -23,7 +23,7 @@ uv run -m recommender.db
 uv sync
 ollama signin
 ollama pull mxbai-embed-large:335m
-uv run uvicorn recommender:app --port 8000 --host 0.0.0.0
+uv run uvicorn recommender:app --port 8000 --host 127.0.0.1
 ```
 
 ### Deployment
