@@ -1,8 +1,9 @@
-from pathlib import Path
+import os
+import secrets
 from typing import Any, cast
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
 from recommender.app import (
     AnswerResponse,
@@ -13,14 +14,22 @@ from recommender.app import (
     load_db,
 )
 from recommender.dialog import get_answer
+from recommender.typing import CourseFilters
 
-app = FastAPI(title="Course Recommender API")
-FRONTEND_FILE = Path(__file__).with_name("static") / "index.html"
+app = FastAPI(title="Course Finder API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://course-finder.se", "https://www.course-finder.se"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-@app.get("/")
-def index() -> FileResponse:
-    return FileResponse(FRONTEND_FILE)
+def verify_api_key(x_api_key: str | None = Header(default=None)) -> None:
+    expected = os.environ.get("CHAT_API_KEY")
+    if expected and not secrets.compare_digest(x_api_key or "", expected):
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 
 @app.get("/health")
@@ -28,9 +37,23 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/chat", response_model=AnswerResponse)
+@app.post(
+    "/chat", response_model=AnswerResponse, dependencies=[Depends(verify_api_key)]
+)
 def chat(payload: ChatRequest) -> AnswerResponse:
-    response = get_answer(load_db(), payload.question.strip())
+    filters = cast(
+        CourseFilters,
+        payload.model_dump(
+            exclude={"question", "inference_level", "in_swedish"}, exclude_none=True
+        ),
+    )
+    response = get_answer(
+        load_db(),
+        payload.question.strip(),
+        payload.inference_level,
+        payload.in_swedish,
+        filters,
+    )
     if response is None:
         raise HTTPException(status_code=400, detail="Could not parse question")
 

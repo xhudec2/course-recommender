@@ -64,31 +64,31 @@ class Database:
             for round in course_rounds:
                 sps.extend(round["study_periods"])
             if len(sps) == 0:
-                return None
+                return ["null"]
             return [sp.lower() for sp in sps]
 
         except Exception as e:
             print(f"{course_rounds} failed with {e}")
-            # default to all sps
-            return None
+            return ["null"]
 
     def _get_metadata(self, course: Course) -> Metadata:
-        fields_of_study: None | list[str] = None
+        fields_of_study: None | list[str] = ["null"]
         periods: None | list[str] = None
+        if isinstance(course.field_of_study, str):
+            fields_of_study = course.field_of_study.split(", ")
 
-        if isinstance(course["field_of_study"], str):
-            fields_of_study = course["field_of_study"].split(", ")
-
-        if course["course_rounds"] is not None:
-            course_rounds = course["course_rounds"].replace("'", '"')
+        if course.course_rounds is not None:
+            course_rounds = course.course_rounds.replace("'", '"')
             course_rounds = course_rounds.replace("None", "null")
             rounds = json.loads(course_rounds)
             periods = self._get_sps(rounds)
 
         metadata: Metadata = {
-            "course_code": course["course_code"],
-            "course_name": course["course_name"],
-            "owner": course["course_owner"],
+            "course_code": course.course_code,
+            "course_name": course.course_name,
+            "course_swedish_name": course.course_swedish_name,
+            "owner": course.course_owner,
+            "teaching_language": course.teaching_language,
             "field_of_study": fields_of_study,
             "periods": periods,
         }
@@ -124,6 +124,10 @@ class Database:
                 periods_filter = [{"periods": {"$contains": p}} for p in periods]
                 conditions.append({"$or": periods_filter})
 
+        language = filters.get("teaching_language", None)
+        if language is not None:
+            conditions.append({"teaching_language": language})
+
         if len(conditions) == 0:
             return None
 
@@ -139,5 +143,4 @@ class Database:
             n_results=self.query_n,
             where=self._build_where(filters),
         )
-
         return result
