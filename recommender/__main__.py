@@ -1,6 +1,8 @@
+import os
+import secrets
 from typing import Any, cast
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from recommender.app import (
@@ -24,12 +26,18 @@ app.add_middleware(
 )
 
 
+def verify_api_key(x_api_key: str | None = Header(default=None)) -> None:
+    expected = os.environ.get("CHAT_API_KEY")
+    if expected and not secrets.compare_digest(x_api_key or "", expected):
+        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/chat", response_model=AnswerResponse)
+@app.post("/chat", response_model=AnswerResponse, dependencies=[Depends(verify_api_key)])
 def chat(payload: ChatRequest) -> AnswerResponse:
     filters = cast(
         CourseFilters,
